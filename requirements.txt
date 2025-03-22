@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+torch
+torchvision
+torchaudio
+diffusers
+transformers
+accelerate
+safetensors
+controlnet_aux
+pillow
+python-multipart
