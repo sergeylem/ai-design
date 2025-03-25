@@ -25,4 +25,4 @@ dist-ssr
 /backend/generated_images/*
 /backend/__pycache__
 .env
-/backend/loras/*
+/backend/loras/sdxl_vae
