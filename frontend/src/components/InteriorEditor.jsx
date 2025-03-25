@@ -14,20 +14,28 @@ export default function InteriorEditor() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedFile || !prompt) {
-      alert("Load your photo (jpg file) and put a prompt!")
+    if (!prompt.trim()) {
+      alert("Please enter a prompt!")
       return
     }
-
+  
     const formData = new FormData()
-    formData.append('file', selectedFile)
     formData.append('prompt', prompt)
-
-    const res = await axios.post('http://localhost:8000/generate', formData)
-    const imagePath = res.data.image_path.split('/').pop()
-    setGeneratedImage(`http://localhost:8000/images/${imagePath}`)
+  
+    if (selectedFile) {
+      formData.append('file', selectedFile)
+    }
+  
+    try {
+      const res = await axios.post('http://localhost:8000/generate', formData)
+      const imagePath = res.data.image_path.split('/').pop()
+      setGeneratedImage(`http://localhost:8000/images/${imagePath}`)
+    } catch (err) {
+      console.error("Error generating image:", err)
+      alert("Failed to generate image.")
+    }
   }
-
+  
   return (
     <div style={{ width: '100%' }}>
       <h1 style={{ fontSize: '2em', marginBottom: '1em', textAlign: 'center' }}>AI Interior Designer</h1>
