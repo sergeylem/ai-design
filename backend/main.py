@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware 
 from diffusers import (
     StableDiffusionControlNetPipeline,
     ControlNetModel,
@@ -50,6 +51,13 @@ except Exception as e:
 print("🔍 Loading Depth detector (Midas)...")
 depth_estimator = MidasDetector.from_pretrained("lllyasviel/ControlNet")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In prod need to define domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
