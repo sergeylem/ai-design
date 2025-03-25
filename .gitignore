@@ -24,4 +24,5 @@ dist-ssr
 *.sw?
 /backend/generated_images/*
 /backend/__pycache__
+.env
 /backend/loras/*

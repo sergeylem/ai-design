@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.responses import FileResponse
-from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
+from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
 from controlnet_aux import MidasDetector
 import torch
 from PIL import Image
@@ -11,36 +11,36 @@ from datetime import datetime
 
 device = "mps"
 
-# def try_load_vae(pipe, vae_path: str, vae_file: str = "diffusion_pytorch_model.safetensors"):
-#     config_path = os.path.join(vae_path, "config.json")
-#     vae_full_path = os.path.join(vae_path, vae_file)
+def try_load_vae(pipe, vae_path: str, vae_file: str = "diffusion_pytorch_model.safetensors"):
+    config_path = os.path.join(vae_path, "config.json")
+    vae_full_path = os.path.join(vae_path, vae_file)
 
-#     if os.path.exists(config_path) and os.path.exists(vae_full_path):
-#         try:
-#             print("🔄 Подключаю кастомный VAE...")
-#             vae = AutoencoderKL.from_pretrained(
-#                 vae_path,
-#                 weight_name=vae_file,
-#                 torch_dtype=torch.float16
-#             ).to(pipe.device)
-#             pipe.vae = vae
-#             print("✅ VAE успешно загружен")
-#         except Exception as e:
-#             print("⚠️ Ошибка при загрузке VAE:", e)
-#     else:
-#         print("⚠️ VAE или config.json не найдены — используется встроенный VAE")
+    if os.path.exists(config_path) and os.path.exists(vae_full_path):
+        try:
+            print("🔄 Подключаю кастомный VAE...")
+            vae = AutoencoderKL.from_pretrained(
+                vae_path,
+                weight_name=vae_file,
+                torch_dtype=torch.float16
+            ).to(pipe.device)
+            pipe.vae = vae
+            print("✅ VAE успешно загружен")
+        except Exception as e:
+            print("⚠️ Ошибка при загрузке VAE:", e)
+    else:
+        print("⚠️ VAE или config.json не найдены — используется встроенный VAE")
 
 app = FastAPI()
 
 print("🔄 Загружаю ControlNet...")
 controlnet = ControlNetModel.from_pretrained(
-    "diffusers/controlnet-depth-sdxl-1.0",
+    "lllyasviel/sd-controlnet-depth", # ControlNet для SD 1.5
     torch_dtype=torch.float16
 ).to(device)
 
 print("🔄 Загружаю StableDiffusionXL pipeline...")
-pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-xl-base-1.0",
+pipe = StableDiffusionControlNetPipeline.from_pretrained(
+    "runwayml/stable-diffusion-v1-5", # Модель SD 1.5
     controlnet=controlnet,
     torch_dtype=torch.float16
 ).to(device)
@@ -48,9 +48,8 @@ pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
 print("🎨 Загружаю LoRA из ./loras/lora_v1.0/lora.safetensors ...")
 try:
     pipe.load_lora_weights(
-        "./loras/lora_v1.0", 
-        # weight_name="lora.safetensors",
-        weight_name="Interior_Cream_Style_v1.safetensors",
+        "./loras/sd_1.5", 
+        weight_name="etf",
         adapter_name="default"
     )
 except Exception as e:
@@ -76,14 +75,14 @@ async def generate(prompt: str = Form(...), file: UploadFile = Form(...)):
         print("\n📤 Получен запрос на генерацию...")
         print("📝 Промпт:", prompt)
         content = await file.read()
-        input_image = Image.open(BytesIO(content)).convert("RGB").resize((1024, 1024))
+        input_image = Image.open(BytesIO(content)).convert("RGB").resize((512, 512)) # SD 1.5 работает с 512x512
         processed_image = depth_estimator(input_image)
         # processed_image = input_image
 
         result = pipe(
             prompt,
             image=processed_image,
-            num_inference_steps=30,  # 50
+            num_inference_steps=50,  # 50
             negative_prompt= "ugly, bad colors, messy room, unrealistic", #"lowres, blurry, ugly, messy, distorted, bad composition", # "ugly, bad colors, messy room, unrealistic",
             guidance_scale=7.5, # 9,
             guidance_rescale=0.7 #0.8
