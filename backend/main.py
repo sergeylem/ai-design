@@ -48,8 +48,8 @@ pipe = StableDiffusionControlNetPipeline.from_pretrained(
 print("🎨 Загружаю LoRA из ./loras/lora_v1.0/lora.safetensors ...")
 try:
     pipe.load_lora_weights(
-        "./loras/sd_1.5", 
-        weight_name="etf",
+        "./loras/lora_v1.0", 
+        weight_name="Ohty_ohty_Cream_LoRA_V1.safetensors",
         adapter_name="default"
     )
 except Exception as e:
